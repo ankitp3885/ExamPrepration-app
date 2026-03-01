@@ -5,7 +5,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-const URL = 'mongodb://localhost:27017/examprepration'
+const URL = 'mongodb+srv://examadmin:Ankit@123@cluster0.bjpwsk6.mongodb.net/?appName=Cluster0'
 mongoose.connect(URL)
 .then(()=>{
     console.log("MongoDB Connected")
