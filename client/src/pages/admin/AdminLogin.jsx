@@ -1,12 +1,23 @@
 
-import { useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
 
 const AdminLogin = () => {
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+
+  // check if admin user already exists in localStorage
+  useEffect(() => {
+    const storedAdmin = localStorage.getItem("adminUser");
+    if (!storedAdmin) {
+      setIsRegisterMode(true);
+    }
+  }, []);
 
 
   const handleChange = (e) => {
@@ -14,24 +25,46 @@ const AdminLogin = () => {
   };
 
   
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      const res = await axios.post("http://localhost:5000/api/admin/login", form);
 
-      if (res.data.message === "Login Successfully") {
-        alert("Login Successfully");
-        localStorage.setItem("adminEmail", res.data.admin.email);
-        localStorage.setItem("id", res.data.admin.id);
-        localStorage.setItem("role", res.data.admin.role);
-
-        window.location.href = "/adminDashboard";
+    if (isRegisterMode) {
+      if (!otpSent) {
+        // generate and "send" OTP
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        setOtp(code);
+        setOtpSent(true);
+        alert(`Your OTP is ${code}`); // simulate email
+        return;
       } else {
-        alert(res.data.message || "Login Failed");
+        // verify OTP
+        if (enteredOtp === otp) {
+          localStorage.setItem(
+            "adminUser",
+            JSON.stringify({ email: form.email, password: form.password, role: "admin" })
+          );
+          setIsRegisterMode(false);
+          setOtpSent(false);
+          setEnteredOtp("");
+          alert("Admin account created. Please log in.");
+          setForm({ email: "", password: "" });
+        } else {
+          alert("Invalid OTP. Please try again.");
+        }
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error logging in. Please try again.");
+    }
+
+    // login flow: compare with stored admin
+    const stored = JSON.parse(localStorage.getItem("adminUser") || "null");
+    if (stored && stored.email === form.email && stored.password === form.password) {
+      alert("Login Successfully");
+      localStorage.setItem("adminEmail", stored.email);
+      localStorage.setItem("id", "1");
+      localStorage.setItem("role", stored.role);
+      window.location.href = "/adminDashboard";
+    } else {
+      alert("Invalid credentials or no admin account available.");
     }
   };
 
@@ -106,7 +139,7 @@ const AdminLogin = () => {
       `}</style>
 
       <div className="form-container">
-        <h2>Admin Login</h2>
+        <h2>{isRegisterMode ? "Create Admin" : "Admin Login"}</h2>
         <form onSubmit={handleSubmit} method="POST">
           <input
             type="email"
@@ -115,6 +148,7 @@ const AdminLogin = () => {
             value={form.email}
             onChange={handleChange}
             required
+            disabled={otpSent}
           />
           <input
             type="password"
@@ -123,17 +157,25 @@ const AdminLogin = () => {
             value={form.password}
             onChange={handleChange}
             required
+            disabled={otpSent}
           />
-          <button type="submit">LOGIN</button>
+          {isRegisterMode && otpSent && (
+            <input
+              type="text"
+              name="otp"
+              placeholder="Enter OTP"
+              value={enteredOtp}
+              onChange={(e) => setEnteredOtp(e.target.value)}
+              required
+            />
+          )}
+          <button type="submit">{isRegisterMode ? (otpSent ? "VERIFY OTP" : "REGISTER") : "LOGIN"}</button>
         </form>
-        <div className="links">
-          {/* <p>
-            <a href="#">Forgot Username / Password?</a>
-          </p> */}
-          {/* <p>
-            Create an account? <Link to="/registration">Sign up</Link>
-          </p> */}
-        </div>
+        {!isRegisterMode && (
+          <p style={{fontSize:'12px',marginTop:'10px'}}>
+            Don&apos;t have an admin account? <a href="#" onClick={() => setIsRegisterMode(true)}>Create one</a>
+          </p>
+        )}
       </div>
     </div>
   );
