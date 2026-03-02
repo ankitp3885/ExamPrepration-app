@@ -1,4 +1,3 @@
-import axios from "axios";
 import { useState } from "react";
 import { Link } from "react-router";
 export default function Login() {
@@ -9,21 +8,18 @@ const [form ,setform] = useState({
 const handleChange = (e)=>{
   setform({...form,[e.target.name]:e.target.value})
 }
-const handleSubmit = async(e)=>{
+const handleSubmit = (e)=>{
   e.preventDefault();
-  try{
-    const res =await axios.post('http://localhost:5000/api/examinee/login',form)
-    console.log(res.data)
-    if(res.data.message=="Login Successfully"){
-      localStorage.setItem("userEmail",res.data.user.email)
-      localStorage.setItem("userId",res.data.user.id)
-      localStorage.setItem("userRole",res.data.user.role)
-      window.location.href='/userDashboard'
-    }
-
-  }catch(er){
-    console.log(er)
-    alert("Sorry try again")
+  // authenticate against stored examinees
+  const list = JSON.parse(localStorage.getItem('examinees') || '[]');
+  const user = list.find(u => u.email === form.email && u.password === form.password && u.role === 'user');
+  if (user) {
+    localStorage.setItem("userEmail", user.email);
+    localStorage.setItem("userId", user.id);
+    localStorage.setItem("userRole", 'user');
+    window.location.href='/userDashboard';
+  } else {
+    alert("Invalid credentials");
   }
 }
   return (
@@ -109,6 +105,9 @@ button:hover {
         </p> }
         <p>
           Create an account? <Link to="/registration">Sign up</Link>
+        </p>
+        <p style={{marginTop:'6px'}}>
+          Are you an admin? <Link to="/adminlogin">Admin login</Link>
         </p>
       </div>
     </div>
